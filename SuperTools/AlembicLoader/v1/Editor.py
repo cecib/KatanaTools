@@ -5,19 +5,16 @@ from PyQt5 import (
 )
 
 from Katana import UI4
-from . import ScriptActions as SA
+from . import ScriptActions
 
 class AlembicLoaderEditor(QtWidgets.QWidget):
 
     def __init__(self, parent, node):
-        """
-        Initializes an instance of the class.
-        """
         QtWidgets.QWidget.__init__(self, parent)
 
         self.__node = node
 
-        # Get the SuperTool's parameters
+        # Create UI parameters
         locationParameter = self.__node.getParameter('location')
         folderPathParameter = self.__node.getParameter('folderPath')
 
@@ -27,8 +24,6 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
 
         self.__folderPathParameterPolicy = CreateParameterPolicy(
             None, folderPathParameter)
-        self.__folderPathParameterPolicy.addCallback(
-            self.folderPathParameterChangedCallback)
 
         self.__addButton = UI4.Widgets.ToolbarButton(
             'Load Alembics', self,
@@ -36,29 +31,35 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             rolloverPixmap=UI4.Util.IconManager.GetPixmap('Icons/editTextHilite16.png'))
         self.__addButton.clicked.connect(self.__addButtonClicked)
 
-        #######################################################################
-        # Create UI widgets from the parameter policies to display the values
-        # contained in the parameter.
-        #######################################################################
+        # Create UI widgets and layout
         WidgetFactory = UI4.FormMaster.KatanaFactory.ParameterWidgetFactory
         locationWidget = WidgetFactory.buildWidget(
             self, self.__locationParameterPolicy)
         folderPathWidget = WidgetFactory.buildWidget(
             self, self.__folderPathParameterPolicy)
 
-        # Create a layout and add the parameter editing widgets to it
-        mainLayout = QtWidgets.QVBoxLayout()
-        mainLayout.addWidget(locationWidget)
-        mainLayout.addWidget(folderPathWidget)
-        mainLayout.addWidget(self.__addButton)
+        self.mainLayout = QtWidgets.QVBoxLayout()
+        self.mainLayout.addWidget(locationWidget)
+        self.mainLayout.addWidget(folderPathWidget)
+        self.mainLayout.addWidget(self.__addButton)
 
-        # Apply the layout to the widget
-        self.setLayout(mainLayout)
+        self.setLayout(self.mainLayout)
 
     def __addButtonClicked(self):
         nodes = self.__node.loadAlembics(self.__folderPathParameterPolicy.getValue())
+        for node in nodes:
+            checkbox = QtWidgets.QCheckBox(node.getName() + " enabled", self)
+            checkbox.setChecked(True)
 
-    def folderPathParameterChangedCallback(self, *args, **kwds):
-        # Update our custom widget to display the new image
-        folderPath = self.__folderPathParameterPolicy.getValue()
-        print(folderPath)
+            nodeName = node.getName()
+            checkbox.toggled.connect(
+                lambda checked, val=nodeName: self.__checkBoxClicked(checked, val)
+            )
+            self.mainLayout.addWidget(checkbox)
+
+    def __checkBoxClicked(self, state, nodeName):
+        if state == QtCore.Qt.Checked:
+            print('Checked')
+        else:
+            print('Unchecked')
+        print(nodeName)

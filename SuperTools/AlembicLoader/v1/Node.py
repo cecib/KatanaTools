@@ -6,13 +6,13 @@ from Katana import (
     NodegraphAPI,
     AssetAPI,
 )
-from . import ScriptActions as SA
+from . import ScriptActions
 
 log = logging.getLogger('AlembicLoaderNode')
 
 regex_name = r"^(.*?)\_v\d{3}.abc"
 regex_version = r"(v\d{3})"
-
+location = r'C:\Users\Ceci\Documents\_jobs\spinvfx\katana_test_products\products'
 
 class AlembicLoaderNode(NodegraphAPI.SuperTool):
     def __init__(self):
@@ -21,15 +21,19 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         self.addOutputPort("output")
 
         self.getParameters().createChildString('location', '/root')
-        self.getParameters().createChildString('folderPath', '')
+        self.getParameters().createChildString('folderPath', location)
 
-    def addParameterHints(self, attrName, inputDict):
-        inputDict.update(_ExtraHints.get(attrName, {}))
+        self.mergeNode = NodegraphAPI.CreateNode('Merge', self)
+        ScriptActions.AddNodeReferenceParam(self, 'node_merge', self.mergeNode)
+
+        self.getReturnPort(self.getOutputPortByIndex(0).getName()).connect(
+            self.mergeNode.getOutputPortByIndex(0))
 
     def loadAlembics(self, rootdir):
         alembic_nodes = []
+        mergePos = NodegraphAPI.GetNodePosition(self.mergeNode)
         for root, subdirs, files in os.walk(rootdir):
-            for filename in files:
+            for idx, filename in enumerate(files):
 
                 if not filename.endswith(".abc"):
                     continue
@@ -39,7 +43,7 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
                 name = re.match(regex_name, filename).groups()[0]
                 version = re.split(regex_version, filename)[1]
 
-                node = NodegraphAPI.CreateNode("Alembic_In", NodegraphAPI.GetRootNode())
+                node = NodegraphAPI.CreateNode("Alembic_In", self)
                 node.setName(name)
 
                 node.getParameter('name').setValue('/root/world/' + name, 1.0)
@@ -49,23 +53,9 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
                 studioParams = rootParam.createChildGroup("studio")
                 studioParams.createChildNumber("version", int(version[1:]))
 
+                mergePort = self.mergeNode.addInputPort(name)
+                node.getOutputPortByIndex(0).connect(mergePort)
+                NodegraphAPI.SetNodePosition(node, (0, mergePos[1]+50*(idx+1)))
+
                 alembic_nodes.append(node)
         return alembic_nodes
-
-_ExtraHints = {
-    'ImageCoordinate.location': {
-        'widget': 'newScenegraphLocation',
-        'help':
-            """
-            The scene graph location to load alembics into.
-            """,
-    },
-    'ImageCoordinate.folderPath': {
-        'widget': 'assetIdInput',
-        'help':
-            """
-            Location of alembics to load.
-            """,
-    },
-}
-
