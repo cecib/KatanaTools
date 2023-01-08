@@ -14,6 +14,9 @@ regex_name = r"^(.*?)\_v\d{3}.abc"
 regex_version = r"(v\d{3})"
 location = r'C:\Users\Ceci\Documents\_jobs\spinvfx\katana_test_products\products'
 
+#this class should have all katana and nodegraphAPI stuff
+#
+
 class AlembicLoaderNode(NodegraphAPI.SuperTool):
     def __init__(self):
         self.hideNodegraphGroupControls()
@@ -28,6 +31,12 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
 
         self.getReturnPort(self.getOutputPortByIndex(0).getName()).connect(
             self.mergeNode.getOutputPortByIndex(0))
+
+        self.__abcNodes = {}    # {name:[1,2,5]}
+
+    def reloadAlembic(self):
+        pass
+
 
     def loadAlembics(self, rootdir):
         alembic_nodes = []
@@ -44,7 +53,7 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
                 version = re.split(regex_version, filename)[1]
 
                 node = NodegraphAPI.CreateNode("Alembic_In", self)
-                node.setName(name)
+                node.setName(name+str(int(version[1:])))
 
                 node.getParameter('name').setValue('/root/world/' + name, 1.0)
                 node.getParameter('abcAsset').setValue(fullpath, 1.0)
@@ -57,5 +66,12 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
                 node.getOutputPortByIndex(0).connect(mergePort)
                 NodegraphAPI.SetNodePosition(node, (0, mergePos[1]+50*(idx+1)))
 
+                currentVersions = self.__abcNodes.get(name)
+                if currentVersions:
+                    currentVersions.append(int(version[1:]))
+                else:
+                    self.__abcNodes.update({name: [int(version[1:])]})
+
                 alembic_nodes.append(node)
+
         return alembic_nodes

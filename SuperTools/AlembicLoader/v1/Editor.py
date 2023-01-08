@@ -7,6 +7,9 @@ from PyQt5 import (
 from Katana import UI4
 from . import ScriptActions
 
+#this class should have all the Qt/UI stuff
+#
+
 class AlembicLoaderEditor(QtWidgets.QWidget):
 
     def __init__(self, parent, node):
@@ -54,6 +57,9 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 lambda checked, val=node: self.__checkBoxClicked(checked, val)
             )
             self.mainLayout.addWidget(checkbox)
+            combobox = QtWidgets.QComboBox(self)
+            combobox.addItem(node.getName())
+            self.mainLayout.addWidget(combobox)
 
     def __checkBoxClicked(self, state, node):
         if state == QtCore.Qt.Checked:
