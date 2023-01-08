@@ -2,45 +2,57 @@ import os
 import logging
 import re
 
-from Katana import (
-    NodegraphAPI,
-    AssetAPI,
-)
-from . import ScriptActions
+from Katana import NodegraphAPI
 
-log = logging.getLogger('AlembicLoaderNode')
-
-regex_name = r"^(.*?)\_v\d{3}.abc"
-regex_version = r"(v\d{3})"
-location = r'C:\Users\Ceci\Documents\_jobs\spinvfx\katana_test_products\products'
-
-#this class should have all katana and nodegraphAPI stuff
-#
 
 class AlembicLoaderNode(NodegraphAPI.SuperTool):
+
+    REGEX_NAME = r"^(.*?)\_v\d{3}.abc"
+    REGEX_VERSION = r"(v\d{3})"
+
     def __init__(self):
         self.hideNodegraphGroupControls()
 
         self.addOutputPort("output")
 
         self.getParameters().createChildString('location', '/root')
-        self.getParameters().createChildString('folderPath', location)
+        self.getParameters().createChildString('folderPath', r'C:\Users\Ceci\Documents\_jobs\spinvfx\katana_test_products\products')
 
-        self.mergeNode = NodegraphAPI.CreateNode('Merge', self)
-        ScriptActions.AddNodeReferenceParam(self, 'node_merge', self.mergeNode)
+        self.merge_node = NodegraphAPI.CreateNode('Merge', self)
+        self.add_node_reference_param('node_merge', self.merge_node)
 
         self.getReturnPort(self.getOutputPortByIndex(0).getName()).connect(
-            self.mergeNode.getOutputPortByIndex(0))
+            self.merge_node.getOutputPortByIndex(0))
 
-        self.__abcNodes = {}    # {name:[1,2,5]}
+        self.__abc_nodes = {}    # {name:[1,2,5]}
 
-    def reloadAlembic(self):
-        pass
+    def add_node_reference_param(self, param_name, node):
+        param = self.getParameter(param_name)
+        if not param:
+            param = self.getParameters().createChildString(param_name, '')
 
+        param.setExpression('getNode(%r).getNodeName()' % node.getName())
 
-    def loadAlembics(self, rootdir):
+    def disable_node(self, node_name):
+        node = self.get_ref_node(node_name)
+        if node:
+            node.setBypassed(True)
+
+    def enable_node(self, node_name):
+        node = self.get_ref_node(node_name)
+        if node:
+            node.setBypassed(False)
+
+    def get_ref_node(self, node_name):
+        p = self.getParameter('node_' + node_name)
+        if not p:
+            return None
+
+        return NodegraphAPI.GetNode(p.getValue(0))
+
+    def load_alembics(self, rootdir):
         alembic_nodes = []
-        mergePos = NodegraphAPI.GetNodePosition(self.mergeNode)
+        merge_pos = NodegraphAPI.GetNodePosition(self.merge_node)
         for root, subdirs, files in os.walk(rootdir):
             for idx, filename in enumerate(files):
 
@@ -49,28 +61,32 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
 
                 fullpath = root + os.sep + filename
 
-                name = re.match(regex_name, filename).groups()[0]
-                version = re.split(regex_version, filename)[1]
+                name = re.match(AlembicLoaderNode.REGEX_NAME, filename).groups()[0]
+                version = re.split(AlembicLoaderNode.REGEX_VERSION, filename)[1]
 
                 node = NodegraphAPI.CreateNode("Alembic_In", self)
-                node.setName(name+str(int(version[1:])))
+                node_name = name + "_" + str(version)
+                node.setName(node_name)
 
                 node.getParameter('name').setValue('/root/world/' + name, 1.0)
                 node.getParameter('abcAsset').setValue(fullpath, 1.0)
 
-                rootParam = node.getParameters()
-                studioParams = rootParam.createChildGroup("studio")
-                studioParams.createChildNumber("version", int(version[1:]))
+                root_param = node.getParameters()
+                studio_params = root_param.createChildGroup("studio")
+                studio_params.createChildNumber("version", int(version[1:]))
 
-                mergePort = self.mergeNode.addInputPort(name)
-                node.getOutputPortByIndex(0).connect(mergePort)
-                NodegraphAPI.SetNodePosition(node, (0, mergePos[1]+50*(idx+1)))
+                merge_port = self.merge_node.addInputPort(name)
+                node.getOutputPortByIndex(0).connect(merge_port)
+                NodegraphAPI.SetNodePosition(node, (0, merge_pos[1]+50*(idx+1)))
 
-                currentVersions = self.__abcNodes.get(name)
-                if currentVersions:
-                    currentVersions.append(int(version[1:]))
+                version_value = int(version[1:])
+                current_versions = self.__abc_nodes.get(name)
+                if current_versions:
+                    current_versions.append(version_value)
                 else:
-                    self.__abcNodes.update({name: [int(version[1:])]})
+                    self.__abc_nodes.update({name: [version_value]})
+
+                self.add_node_reference_param('node_' + node_name, node)
 
                 alembic_nodes.append(node)
 
