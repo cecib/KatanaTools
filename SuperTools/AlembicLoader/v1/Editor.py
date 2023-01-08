@@ -50,16 +50,13 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         for node in nodes:
             checkbox = QtWidgets.QCheckBox(node.getName() + " enabled", self)
             checkbox.setChecked(True)
-
-            nodeName = node.getName()
-            checkbox.toggled.connect(
-                lambda checked, val=nodeName: self.__checkBoxClicked(checked, val)
+            checkbox.stateChanged.connect(
+                lambda checked, val=node: self.__checkBoxClicked(checked, val)
             )
             self.mainLayout.addWidget(checkbox)
 
-    def __checkBoxClicked(self, state, nodeName):
+    def __checkBoxClicked(self, state, node):
         if state == QtCore.Qt.Checked:
-            print('Checked')
+            node.setBypassed(False)
         else:
-            print('Unchecked')
-        print(nodeName)
+            node.setBypassed(True)
