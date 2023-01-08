@@ -45,17 +45,30 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         self.setLayout(self.main_layout)
 
     def __add_button_clicked(self):
+        combo_boxes = {}
+        check_boxes = {}
+
         nodes = self.__node.load_alembics(self.__folder_path_parameter_policy.getValue())
         for node in nodes:
-            checkbox = QtWidgets.QCheckBox(node.getName() + " enabled", self)
-            checkbox.setChecked(True)
-            checkbox.stateChanged.connect(
-                lambda checked, val=node.getName(): self.__check_box_clicked(checked, val)
-            )
-            self.main_layout.addWidget(checkbox)
-            combobox = QtWidgets.QComboBox(self)
-            combobox.addItem(node.getName().split()[-1])
-            self.main_layout.addWidget(combobox)
+            node_name = node.getName()
+            geo_name = node_name[0:len(node_name)-5]
+
+            check_box = check_boxes.get(geo_name)
+            if not check_box:
+                check_box = QtWidgets.QCheckBox(geo_name + " enabled", self)
+                check_box.setChecked(True)
+                check_box.stateChanged.connect(
+                    lambda checked, val=node_name: self.__check_box_clicked(checked, val)
+                )
+                self.main_layout.addWidget(check_box)
+                check_boxes.update({geo_name: check_box})
+
+            combo_box = combo_boxes.get(geo_name)
+            if not combo_box:
+                combo_box = QtWidgets.QComboBox(self)
+                self.main_layout.addWidget(combo_box)
+                combo_boxes.update({geo_name: combo_box})
+            combo_box.addItem(node.getName().split("_")[-1])
 
     def __check_box_clicked(self, state, node_name):
         if state == QtCore.Qt.Checked:

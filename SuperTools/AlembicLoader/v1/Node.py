@@ -1,5 +1,4 @@
 import os
-import logging
 import re
 
 from Katana import NodegraphAPI
@@ -26,8 +25,11 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
 
         self.__abc_nodes = {}    # {name:[1,2,5]}
 
+    def get_latest_version(self, node_name):
+        pass
+
     def add_node_reference_param(self, param_name, node):
-        param = self.getParameter(param_name)
+        param = self.getParameter(param_name)   # 'node_' + node_name
         if not param:
             param = self.getParameters().createChildString(param_name, '')
 
@@ -83,10 +85,11 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
                 current_versions = self.__abc_nodes.get(name)
                 if current_versions:
                     current_versions.append(version_value)
-                else:
+                else:                       # cube_geom
                     self.__abc_nodes.update({name: [version_value]})
-
+                                                        # cube_geom_v0001
                 self.add_node_reference_param('node_' + node_name, node)
+                # node_cube_geom_v0001
 
                 alembic_nodes.append(node)
 
