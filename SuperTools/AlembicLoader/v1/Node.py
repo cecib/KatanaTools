@@ -23,10 +23,10 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         self.getReturnPort(self.getOutputPortByIndex(0).getName()).connect(
             self.merge_node.getOutputPortByIndex(0))
 
-        self.__abc_nodes = {}    # {name:[1,2,5]}
+        self.__abc_nodes = {}    # {name:[1,2,5]}       {cube_geom:[1,2]}
 
-    def get_latest_version(self, node_name):
-        pass
+    def get_versions(self, geo_name):
+        return self.__abc_nodes.get(geo_name)
 
     def add_node_reference_param(self, param_name, node):
         param = self.getParameter(param_name)   # 'node_' + node_name
