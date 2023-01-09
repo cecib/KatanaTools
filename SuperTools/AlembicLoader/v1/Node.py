@@ -45,6 +45,7 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         p = self.getParameter("node_" + node_name)
         if not p:
             return None
+
         return NodegraphAPI.GetNode(p.getValue(0))
 
     def get_versions(self, geo_name):
