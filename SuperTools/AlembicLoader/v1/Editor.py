@@ -24,18 +24,18 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         self.__folder_path_parameter_policy = create_parameter_policy(
             None, folder_path_parameter)
 
-        self.__load_button = UI4.Widgets.ToolbarButton(
-            'Load Alembics', self,
-            UI4.Util.IconManager.GetPixmap('Icons/editText16.png'),
-            rolloverPixmap=UI4.Util.IconManager.GetPixmap('Icons/editTextHilite16.png'))
-        self.__load_button.clicked.connect(self.__load_button_clicked)
-
-        # Create main UI widgets and layout
+        # Create UI widgets and layout
         widget_factory = UI4.FormMaster.KatanaFactory.ParameterWidgetFactory
         location_widget = widget_factory.buildWidget(
             self, self.__location_parameter_policy)
         folder_path_widget = widget_factory.buildWidget(
             self, self.__folder_path_parameter_policy)
+
+        self.__load_button = UI4.Widgets.ToolbarButton(
+            'Load Alembics', self,
+            UI4.Util.IconManager.GetPixmap('Icons/editText16.png'),
+            rolloverPixmap=UI4.Util.IconManager.GetPixmap('Icons/editTextHilite16.png'))
+        self.__load_button.clicked.connect(self.__load_button_clicked)
 
         self.main_layout = QtWidgets.QVBoxLayout()
         self.main_layout.addWidget(location_widget)
@@ -89,12 +89,7 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             self.__node.disable_node(node_name)
 
     def __combobox_changed(self, value, geo_name):
-        curr_version = int(value[1:])
-        versions = self.__node.get_versions(geo_name)
-        node_name = geo_name + "_" + value
-        is_checked = self.check_boxes.get(geo_name).isChecked()
-        for version in versions:
-            if curr_version == version and is_checked:
-                self.__node.enable_node(node_name)
-            else:
-                self.__node.disable_node(geo_name + "_v00" + str(version))
+        self.__node.update_version(
+            int(value[1:]), geo_name,
+            self.check_boxes.get(geo_name).isChecked()
+        )

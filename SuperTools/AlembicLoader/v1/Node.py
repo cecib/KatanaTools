@@ -23,13 +23,10 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         self.getReturnPort(self.getOutputPortByIndex(0).getName()).connect(
             self.merge_node.getOutputPortByIndex(0))
 
-        self.__abc_nodes = {}    # {name:[1,2,5]}       {cube_geom:[1,2]}
-
-    def get_versions(self, geo_name):
-        return self.__abc_nodes.get(geo_name)
+        self.__abc_nodes = {}    # {name:[1,2,5]}
 
     def add_node_reference_param(self, param_name, node):
-        param = self.getParameter(param_name)   # 'node_' + node_name
+        param = self.getParameter(param_name)
         if not param:
             param = self.getParameters().createChildString(param_name, '')
 
@@ -52,6 +49,9 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
 
         return NodegraphAPI.GetNode(p.getValue(0))
 
+    def get_versions(self, geo_name):
+        return self.__abc_nodes.get(geo_name)
+
     def load_alembics(self, rootdir):
         alembic_nodes = []
         merge_pos = NodegraphAPI.GetNodePosition(self.merge_node)
@@ -63,34 +63,40 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
 
                 fullpath = root + os.sep + filename
 
-                name = re.match(AlembicLoaderNode.REGEX_NAME, filename).groups()[0]
+                geo_name = re.match(AlembicLoaderNode.REGEX_NAME, filename).groups()[0]
                 version = re.split(AlembicLoaderNode.REGEX_VERSION, filename)[1]
 
                 node = NodegraphAPI.CreateNode("Alembic_In", self)
-                node_name = name + "_" + str(version)
+                node_name = geo_name + "_" + str(version)
                 node.setName(node_name)
 
-                node.getParameter('name').setValue('/root/world/' + name, 1.0)
+                node.getParameter('name').setValue('/root/world/' + geo_name, 1.0)
                 node.getParameter('abcAsset').setValue(fullpath, 1.0)
 
                 root_param = node.getParameters()
                 studio_params = root_param.createChildGroup("studio")
                 studio_params.createChildNumber("version", int(version[1:]))
 
-                merge_port = self.merge_node.addInputPort(name)
+                merge_port = self.merge_node.addInputPort(geo_name)
                 node.getOutputPortByIndex(0).connect(merge_port)
                 NodegraphAPI.SetNodePosition(node, (0, merge_pos[1]+50*(idx+1)))
 
                 version_value = int(version[1:])
-                current_versions = self.__abc_nodes.get(name)
+                current_versions = self.__abc_nodes.get(geo_name)
                 if current_versions:
                     current_versions.append(version_value)
-                else:                       # cube_geom
-                    self.__abc_nodes.update({name: [version_value]})
-                                                        # cube_geom_v0001
-                self.add_node_reference_param('node_' + node_name, node)
-                # node_cube_geom_v0001
+                else:
+                    self.__abc_nodes.update({geo_name: [version_value]})
 
+                self.add_node_reference_param('node_' + node_name, node)
                 alembic_nodes.append(node)
 
         return alembic_nodes
+
+    def update_version(self, version_num, geo_name, is_enabled):
+        node_name = geo_name + "_v00" + str(version_num)
+        for version in self.__abc_nodes.get(geo_name):
+            if version_num == version and is_enabled:
+                self.enable_node(node_name)
+            else:
+                self.disable_node(geo_name + "_v00" + str(version))
