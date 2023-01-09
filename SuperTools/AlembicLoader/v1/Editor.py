@@ -57,11 +57,11 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             self.__folder_path_parameter_policy.getValue()
         ):
             geo_name = (
-                node.getParameters().getChild("name").getValue(1.).split("/")[-1]
+                node.getParameters().getChild("name").getValue(1.0).split("/")[-1]
             )
             loaded_geo_names.append(geo_name)
 
-            # Add node parameters per geo to UI widget
+            # Add check box widget to enable/disable geo
             check_box = self.__check_boxes.get(geo_name)
             if not check_box:
                 check_box = QtWidgets.QCheckBox(geo_name + " enabled", self)
@@ -72,6 +72,7 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 self.main_layout.addWidget(check_box)
                 self.__check_boxes.update({geo_name: check_box})
 
+            # Add combo box widget to control geo version
             combo_box = self.__combo_boxes.get(geo_name)
             if not combo_box:
                 combo_box = QtWidgets.QComboBox(self)

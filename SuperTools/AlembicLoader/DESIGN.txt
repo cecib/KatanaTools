@@ -9,5 +9,10 @@ AlembicLoaderNode class (Node.py) takes care of the internal logic of the SuperT
 as enabling/disabling loaded geometry and switching between versions. This division between
 UI and the internal logic is fundamental to any scalable tool.
 
+With more time, I would have liked to update the tool so that it works properly when the 
+user deletes alembic nodes inside the group. Right now, the UI is not updated as it 
+should when this occurs so it still contains versions that may not be in the scene
+at that point in time.
+
 Thank you for reading.
 

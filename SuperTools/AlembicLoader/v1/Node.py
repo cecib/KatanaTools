@@ -58,9 +58,11 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
 
             geo_name = re.match(self.REGEX_NAME, filename).groups()[0]
             version = re.split(self.REGEX_VERSION, filename)[1]
+            node_name = geo_name + "_" + str(version)
+            if self.get_ref_node(node_name):
+                continue
 
             node = NodegraphAPI.CreateNode("Alembic_In", self)
-            node_name = geo_name + "_" + str(version)
             node.setName(node_name)
 
             # Update Alembic_In node parameters
