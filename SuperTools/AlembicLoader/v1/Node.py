@@ -67,9 +67,6 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
             node.getParameter("abcAsset").setValue(
                 os.path.join(directory, filename), 1.0
             )
-            studio_params = node.getParameters().createChildGroup("studio")
-            studio_params.createChildNumber("geoName", geo_name)
-
             node.getOutputPortByIndex(0).connect(self.merge_node.addInputPort(geo_name))
             NodegraphAPI.SetNodePosition(node, (0, self.merge_pos[1] + 50 * (idx + 1)))
 

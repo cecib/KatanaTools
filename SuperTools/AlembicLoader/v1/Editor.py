@@ -56,7 +56,9 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         for node in self.__node.load_alembics(
             self.__folder_path_parameter_policy.getValue()
         ):
-            geo_name = node.getParameter("geoName")
+            geo_name = (
+                node.getParameters().getChild("name").getValue(1.).split("/")[-1]
+            )
             loaded_geo_names.append(geo_name)
 
             # Add node-specific parameters to UI widget
