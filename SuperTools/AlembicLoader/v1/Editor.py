@@ -61,7 +61,7 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             )
             loaded_geo_names.append(geo_name)
 
-            # Add node-specific parameters to UI widget
+            # Add node parameters per geo to UI widget
             check_box = self.__check_boxes.get(geo_name)
             if not check_box:
                 check_box = QtWidgets.QCheckBox(geo_name + " enabled", self)
@@ -82,7 +82,7 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 self.__combo_boxes.update({geo_name: combo_box})
             combo_box.addItem(node.getName().split("_")[-1])
 
-        # Set latest version for each alembic
+        # Set latest alembic version for each geo
         for geo_name in loaded_geo_names:
             combo_box = self.__combo_boxes.get(geo_name)
             combo_box.setCurrentText(
