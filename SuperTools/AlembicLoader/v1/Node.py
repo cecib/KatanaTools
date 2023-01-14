@@ -74,6 +74,14 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
             geo_name = re.match(self.REGEX_NAME, filename).groups()[0]
             version = re.split(self.REGEX_VERSION, filename)[1]
 
+            # Store the main category for given geometry
+            category = geo_name.split("_")[0]
+            names_per_cat = self.__categories.get(category)
+            if names_per_cat:
+                names_per_cat.append(geo_name)
+            else:
+                self.__categories.update({category: [geo_name]})
+
             # Store all available versions for given geometry
             version_dict = self.__name_to_versions.get(geo_name)
             version_num = int(version[1:])
@@ -82,7 +90,6 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
                 continue
 
             self.__name_to_versions.update({geo_name: {version_num: fullpath}})
-            self.__categories.add(geo_name.split("_"[0]))
             node_id = len(self.__name_to_versions)
 
             # Create Alembic_In and update node parameters

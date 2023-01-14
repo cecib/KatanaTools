@@ -57,9 +57,36 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
 
         self.setLayout(self.main_layout)
 
+        self.__check_boxes = {}
         self.__combo_boxes_ver = {}
-        self.__check_boxes_cat = {}
-        self.__category_to_combo_box = {}
+        self.__combo_boxes_cat = {}
+
+    def __check_box_clicked(self, state, category):
+        combo_box_cat = self.__combo_boxes_cat.get(category)
+        is_enabled = state == QtCore.Qt.Checked
+        for geo_name in [
+            combo_box_cat.itemText(i) for i in range(combo_box_cat.count())
+        ]:
+            if is_enabled:
+                self.__node.enable_node(geo_name)
+            else:
+                self.__node.disable_node(geo_name)
+
+    def __combo_box_category_changed(self, geo_name):
+        category = geo_name.split("_")[0]
+        check_box = self.__check_boxes.get(category)
+        if not check_box.isChecked():
+            return
+        self.__node.enable_node(geo_name)
+        for name in self.__node.get_category_values(category):
+            if name != geo_name:
+                self.__node.disable_node(name)
+
+    def __combo_box_version_changed(self, version, geo_name):
+        self.__node.update_version(
+            int(version[1:]),
+            geo_name,
+        )
 
     def __load_button_clicked(self):
         for node in self.__node.load_alembics(
@@ -68,9 +95,9 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             geo_name = (
                 node.getParameters().getChild("name").getValue(1.0).split("/")[-1]
             )
-            category = geo_name.split("_"[0])
+            category = geo_name.split("_")[0]
 
-            # Add check box widget to enable/disable geo
+            # Add check box widget to enable/disable category
             check_box = self.__check_boxes.get(category)
             if not check_box:
                 check_box = QtWidgets.QCheckBox(category, self)
@@ -79,7 +106,7 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                     lambda state, name=category: self.__check_box_clicked(state, name)
                 )
                 self.main_layout.addWidget(check_box)
-                self.__check_boxes.update({geo_name: check_box})
+                self.__check_boxes.update({category: check_box})
 
             # Add combo box widget to control category options
             combo_box_cat = self.__combo_boxes_cat.get(category)
@@ -90,6 +117,7 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 )
                 self.main_layout.addWidget(combo_box_cat)
                 self.__combo_boxes_cat.update({category: combo_box_cat})
+            combo_box_cat.addItem(geo_name)
 
             # Add combo box widget to control geo version
             combo_box_ver = self.__combo_boxes_ver.get(geo_name)
@@ -110,30 +138,3 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             combo_box_ver.setCurrentText(
                 self.VERSION_LABEL + str(max(versions)).zfill(3)
             )
-
-    def __combo_box_category_changed(self, geo_name):
-        category = geo_name.split("_"[0])
-        check_box = self.__check_boxes.get(category)
-        if not check_box.isChecked():
-            return
-        self.__node.enable_node(geo_name)
-        for name in self.__node.get_category_values(category):
-            if name != geo_name:
-                self.__node.disable_node(name)
-
-    def __check_box_clicked(self, state, category):
-        combo_box_ver = self.__combo_boxes_ver.get(category)
-        is_enabled = state == QtCore.Qt.Checked
-        for geo_name in [
-            combo_box_ver.itemText(i) for i in range(combo_box_ver.count())
-        ]:
-            if is_enabled:
-                self.__node.enable_node(geo_name)
-            else:
-                self.__node.disable_node(geo_name)
-
-    def __combo_box_version_changed(self, version, geo_name):
-        self.__node.update_version(
-            int(version[1:]),
-            geo_name,
-        )
