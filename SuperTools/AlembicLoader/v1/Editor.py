@@ -12,6 +12,7 @@ from Katana import UI4
 # Do not repeat constants like "abcAsset"
 # Fix comments, for example those in load_alembics don't flow/fit well
 
+
 class AlembicLoaderEditor(QtWidgets.QWidget):
 
     VERSION_LABEL = "v"
@@ -56,8 +57,9 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
 
         self.setLayout(self.main_layout)
 
-        self.__combo_boxes = {}
-        self.__check_boxes = {}
+        self.__combo_boxes_ver = {}
+        self.__check_boxes_cat = {}
+        self.__category_to_combo_box = {}
 
     def __load_button_clicked(self):
         for node in self.__node.load_alembics(
@@ -66,50 +68,71 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             geo_name = (
                 node.getParameters().getChild("name").getValue(1.0).split("/")[-1]
             )
+            category = geo_name.split("_"[0])
 
             # Add check box widget to enable/disable geo
-            check_box = self.__check_boxes.get(geo_name)
+            check_box = self.__check_boxes.get(category)
             if not check_box:
-                check_box = QtWidgets.QCheckBox(geo_name + " enabled", self)
+                check_box = QtWidgets.QCheckBox(category, self)
                 check_box.setChecked(True)
                 check_box.stateChanged.connect(
-                    lambda state, node_name=geo_name: self.__check_box_clicked(
-                        state, node_name
-                    )
+                    lambda state, name=category: self.__check_box_clicked(state, name)
                 )
                 self.main_layout.addWidget(check_box)
                 self.__check_boxes.update({geo_name: check_box})
 
+            # Add combo box widget to control category options
+            combo_box_cat = self.__combo_boxes_cat.get(category)
+            if not combo_box_cat:
+                combo_box_cat = QtWidgets.QComboBox(self)
+                combo_box_cat.currentTextChanged.connect(
+                    self.__combo_box_category_changed
+                )
+                self.main_layout.addWidget(combo_box_cat)
+                self.__combo_boxes_cat.update({category: combo_box_cat})
+
             # Add combo box widget to control geo version
-            combo_box = self.__combo_boxes.get(geo_name)
-            if not combo_box:
-                combo_box = QtWidgets.QComboBox(self)
-                combo_box.currentTextChanged.connect(
-                    lambda version, name=geo_name: self.__combo_box_changed(
+            combo_box_ver = self.__combo_boxes_ver.get(geo_name)
+            if not combo_box_ver:
+                combo_box_ver = QtWidgets.QComboBox(self)
+                combo_box_ver.currentTextChanged.connect(
+                    lambda version, name=geo_name: self.__combo_box_version_changed(
                         version, name
                     )
                 )
-                self.main_layout.addWidget(combo_box)
-                self.__combo_boxes.update({geo_name: combo_box})
+                self.main_layout.addWidget(combo_box_ver)
+                self.__combo_boxes_ver.update({geo_name: combo_box_ver})
 
             # Add version options and set to latest
             versions = self.__node.get_versions(geo_name).keys()
             for item in versions:
-                combo_box.addItem(self.VERSION_LABEL + str(item).zfill(3))
-            combo_box.setCurrentText(
+                combo_box_ver.addItem(self.VERSION_LABEL + str(item).zfill(3))
+            combo_box_ver.setCurrentText(
                 self.VERSION_LABEL + str(max(versions)).zfill(3)
             )
 
-    def __check_box_clicked(self, state, geo_name):
-        combo_box = self.__combo_boxes.get(geo_name)
-        if combo_box is None:
+    def __combo_box_category_changed(self, geo_name):
+        category = geo_name.split("_"[0])
+        check_box = self.__check_boxes.get(category)
+        if not check_box.isChecked():
             return
-        if state == QtCore.Qt.Checked:
-            self.__node.enable_node(geo_name)
-        else:
-            self.__node.disable_node(geo_name)
+        self.__node.enable_node(geo_name)
+        for name in self.__node.get_categories[category]:
+            if name != geo_name:
+                self.__node.disable_node(name)
 
-    def __combo_box_changed(self, version, geo_name):
+    def __check_box_clicked(self, state, category):
+        combo_box_ver = self.__combo_boxes_ver.get(category)
+        is_enabled = state == QtCore.Qt.Checked
+        for geo_name in [
+            combo_box_ver.itemText(i) for i in range(combo_box_ver.count())
+        ]:
+            if is_enabled:
+                self.__node.enable_node(geo_name)
+            else:
+                self.__node.disable_node(geo_name)
+
+    def __combo_box_version_changed(self, version, geo_name):
         self.__node.update_version(
             int(version[1:]),
             geo_name,

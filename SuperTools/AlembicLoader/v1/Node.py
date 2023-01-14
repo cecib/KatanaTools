@@ -29,7 +29,8 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         # {geo_name: {version_int: alembic_path}}
         self.__name_to_versions = {}
         # Categories corresponding to 1st part of geometry name
-        self.__categories = []
+        # {category: [geo_names]}
+        self.__categories = {}
 
     def add_node_reference_param(self, param_name, node):
         param = self.getParameter(param_name)
@@ -55,6 +56,9 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
 
         return NodegraphAPI.GetNode(p.getValue(0))
 
+    def get_categories(self):
+        return self.__categories
+
     def get_versions(self, geo_name):
         return self.__name_to_versions.get(geo_name)
 
@@ -75,13 +79,14 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
                 version_dict.update({version_num: fullpath})
                 continue
 
+            self.__name_to_versions.update({geo_name: {version_num: fullpath}})
+            self.__categories.add(geo_name.split("_"[0]))
+            node_id = len(self.__name_to_versions)
+
+            # Create Alembic_In and update node parameters
             node = NodegraphAPI.CreateNode("Alembic_In", self)
             node.setName(geo_name)
 
-            self.__name_to_versions.update({geo_name: {version_num: fullpath}})
-            node_id = len(self.__name_to_versions)
-
-            # Update Alembic_In node parameters
             node.getParameter("name").setValue("/root/world/" + geo_name, 1.0)
             node.getParameter("abcAsset").setValue(fullpath, 1.0)
 
