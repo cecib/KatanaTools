@@ -9,14 +9,6 @@ from Katana import UI4
 #    the first word part of name separated by '_' are the same) mutually exclusive?
 #    An artist would use one of them as an active camera.
 
-# 2. Consider the case where there are 10~20 version of each kind of publish
-#    (let's assume our cube asset has these many versions). Instead of making
-#    1 alembic_in for every single version, can you think of a way to reuse 1
-#    alembic_in node per publish kind (i.e. 1 camera_asset alembic_in for all
-#    camera_asset_* versions)? This way the scene graph can be contained and
-#    eventual updates of the versions into the scene can still happen without
-#    creating so many alembic_in nodes?
-
 
 class AlembicLoaderEditor(QtWidgets.QWidget):
     def __init__(self, parent, node):
@@ -86,7 +78,9 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             if not combo_box:
                 combo_box = QtWidgets.QComboBox(self)
                 combo_box.currentTextChanged.connect(
-                    lambda value, name=geo_name: self.__combobox_changed(value, name)
+                    lambda version, name=geo_name: self.__combo_box_changed(
+                        version, name
+                    )
                 )
                 self.main_layout.addWidget(combo_box)
                 self.__combo_boxes.update({geo_name: combo_box})
@@ -95,9 +89,7 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             versions = self.__node.get_versions(geo_name).keys()
             for item in versions:
                 combo_box.addItem("v" + str(item).zfill(3))
-            combo_box.setCurrentText(
-                "v" + str(max(versions)).zfill(3)
-            )
+            combo_box.setCurrentText("v" + str(max(versions)).zfill(3))
 
     def __check_box_clicked(self, state, geo_name):
         combo_box = self.__combo_boxes.get(geo_name)
@@ -108,8 +100,8 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         else:
             self.__node.disable_node(geo_name)
 
-    def __combobox_changed(self, version_label, geo_name):
+    def __combo_box_changed(self, version, geo_name):
         self.__node.update_version(
-            int(version_label[1:]),
+            int(version[1:]),
             geo_name,
         )

@@ -14,7 +14,10 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         self.addOutputPort("output")
 
         self.getParameters().createChildString("location", "/root")
-        self.getParameters().createChildString("folderPath", "C:/Users/Ceci/Documents/_jobs/spinvfx/katana_test_products/products/")
+        self.getParameters().createChildString(
+            "folderPath",
+            "C:/Users/Ceci/Documents/_jobs/spinvfx/katana_test_products/products/",
+        )
 
         self.merge_node = NodegraphAPI.CreateNode("Merge", self)
         self.merge_pos = NodegraphAPI.GetNodePosition(self.merge_node)
@@ -62,8 +65,6 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
             fullpath = os.path.join(directory, filename)
             geo_name = re.match(self.REGEX_NAME, filename).groups()[0]
             version = re.split(self.REGEX_VERSION, filename)[1]
-            if self.get_ref_node(geo_name):
-                continue
 
             # Store all available versions for given geometry
             version_dict = self.__name_to_versions.get(geo_name)
@@ -79,12 +80,8 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
             node.getParameter("name").setValue("/root/world/" + geo_name, 1.0)
             node.getParameter("abcAsset").setValue(fullpath, 1.0)
 
-            node.getOutputPortByIndex(0).connect(
-                self.merge_node.addInputPort(geo_name)
-            )
-            NodegraphAPI.SetNodePosition(
-                node, (0, self.merge_pos[1] + 50 * (idx + 1))
-            )
+            node.getOutputPortByIndex(0).connect(self.merge_node.addInputPort(geo_name))
+            NodegraphAPI.SetNodePosition(node, (0, self.merge_pos[1] + 50 * (idx + 1)))
 
             self.__name_to_versions.update({geo_name: {version_num: fullpath}})
             self.add_node_reference_param("node_" + geo_name, node)
@@ -94,6 +91,7 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
 
     def update_version(self, version, geo_name):
         version_dict = self.__name_to_versions.get(geo_name)
-        self.get_ref_node(geo_name).getParameter("abcAsset").setValue(
-            version_dict.get(version), 1.0
-        )
+        node = self.get_ref_node(geo_name)
+        if not node or not version_dict:
+            return
+        node.getParameter("abcAsset").setValue(version_dict.get(version), 1.0)
