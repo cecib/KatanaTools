@@ -68,7 +68,9 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 check_box = QtWidgets.QCheckBox(geo_name + " enabled", self)
                 check_box.setChecked(True)
                 check_box.stateChanged.connect(
-                    lambda state, name=geo_name: self.__check_box_clicked(state, name)
+                    lambda state, node_name=geo_name: self.__check_box_clicked(
+                        state, node_name
+                    )
                 )
                 self.main_layout.addWidget(check_box)
                 self.__check_boxes.update({geo_name: check_box})
