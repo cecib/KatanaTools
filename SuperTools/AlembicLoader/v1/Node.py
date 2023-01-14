@@ -14,10 +14,7 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         self.addOutputPort("output")
 
         self.getParameters().createChildString("location", "/root")
-        self.getParameters().createChildString(
-            "folderPath",
-            "C:/Users/Ceci/Documents/_jobs/spinvfx/katana_test_products/products/",
-        )
+        self.getParameters().createChildString("folderPath", "C:/Users/Ceci/Documents/_jobs/spinvfx/katana_test_products/products/")
 
         self.merge_node = NodegraphAPI.CreateNode("Merge", self)
         self.merge_pos = NodegraphAPI.GetNodePosition(self.merge_node)
@@ -25,8 +22,9 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         self.getReturnPort(self.getOutputPortByIndex(0).getName()).connect(
             self.merge_node.getOutputPortByIndex(0)
         )
+        # Store geometry name to version to path
+        # {geo_name: {version_int: alembic_path}}
         self.__name_to_versions = {}
-        self.__categories = set()
 
     def add_node_reference_param(self, param_name, node):
         param = self.getParameter(param_name)
@@ -61,48 +59,41 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
             if not filename.endswith(".abc"):
                 continue
 
+            fullpath = os.path.join(directory, filename)
             geo_name = re.match(self.REGEX_NAME, filename).groups()[0]
             version = re.split(self.REGEX_VERSION, filename)[1]
-            # node_name = geo_name + "_" + str(version)
             if self.get_ref_node(geo_name):
                 continue
 
-            self.__categories.add(geo_name.split("_")[0])
-
             # Store all available versions for given geometry
+            version_dict = self.__name_to_versions.get(geo_name)
             version_num = int(version[1:])
-            versions = self.__name_to_versions.get(geo_name)
-            if versions:
-                node = self.get_ref_node(geo_name)
+            if version_dict:
+                version_dict.update({version_num: fullpath})
+                continue
 
-                versions.append(version_num)
-            else:
-                node = NodegraphAPI.CreateNode("Alembic_In", self)
-                node.setName(geo_name)
+            node = NodegraphAPI.CreateNode("Alembic_In", self)
+            node.setName(geo_name)
 
-                # Update Alembic_In node parameters
-                node.getParameter("name").setValue("/root/world/" + geo_name, 1.0)
-                node.getParameter("abcAsset").setValue(
-                    os.path.join(directory, filename), 1.0
-                )
-                node.getOutputPortByIndex(0).connect(
-                    self.merge_node.addInputPort(geo_name)
-                )
-                NodegraphAPI.SetNodePosition(
-                    node, (0, self.merge_pos[1] + 50 * (idx + 1))
-                )
+            # Update Alembic_In node parameters
+            node.getParameter("name").setValue("/root/world/" + geo_name, 1.0)
+            node.getParameter("abcAsset").setValue(fullpath, 1.0)
 
-                self.add_node_reference_param("node_" + geo_name, node)
-                self.__name_to_versions.update({geo_name: [version_num]})
+            node.getOutputPortByIndex(0).connect(
+                self.merge_node.addInputPort(geo_name)
+            )
+            NodegraphAPI.SetNodePosition(
+                node, (0, self.merge_pos[1] + 50 * (idx + 1))
+            )
 
-                nodes.append(node)
+            self.__name_to_versions.update({geo_name: {version_num: fullpath}})
+            self.add_node_reference_param("node_" + geo_name, node)
+            nodes.append(node)
 
         return nodes
 
-    def update_version(self, curr_version, geo_name, is_enabled):
-        name_prefix = geo_name + "_v"
-        for version in self.__name_to_versions.get(geo_name):
-            if curr_version == version and is_enabled:
-                self.enable_node(name_prefix + str(curr_version).zfill(3))
-            else:
-                self.disable_node(name_prefix + str(version).zfill(3))
+    def update_version(self, version, geo_name):
+        version_dict = self.__name_to_versions.get(geo_name)
+        self.get_ref_node(geo_name).getParameter("abcAsset").setValue(
+            version_dict.get(version), 1.0
+        )

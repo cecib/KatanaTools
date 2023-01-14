@@ -63,15 +63,12 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         self.__check_boxes = {}
 
     def __load_button_clicked(self):
-        loaded_geo_names = []
-
         for node in self.__node.load_alembics(
             self.__folder_path_parameter_policy.getValue()
         ):
             geo_name = (
                 node.getParameters().getChild("name").getValue(1.0).split("/")[-1]
             )
-            loaded_geo_names.append(geo_name)
 
             # Add check box widget to enable/disable geo
             check_box = self.__check_boxes.get(geo_name)
@@ -94,12 +91,12 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 self.main_layout.addWidget(combo_box)
                 self.__combo_boxes.update({geo_name: combo_box})
 
-            versions = self.__node.get_versions(geo_name)
+            # Add version options and set to latest
+            versions = self.__node.get_versions(geo_name).keys()
             for item in versions:
-
                 combo_box.addItem("v" + str(item).zfill(3))
             combo_box.setCurrentText(
-                "v" + str(max(self.__node.get_versions(geo_name))).zfill(3)
+                "v" + str(max(versions)).zfill(3)
             )
 
     def __check_box_clicked(self, state, geo_name):
@@ -115,5 +112,4 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         self.__node.update_version(
             int(version_label[1:]),
             geo_name,
-            self.__check_boxes.get(geo_name).isChecked(),
         )
