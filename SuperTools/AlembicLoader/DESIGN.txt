@@ -10,9 +10,7 @@ as enabling/disabling loaded geometry and switching between versions. This divis
 UI and the internal logic is fundamental to any scalable tool.
 
 With more time, I would have liked to update the tool so that it works properly when the 
-user deletes alembic nodes inside the group. Right now, the UI is not updated as it 
-should when this occurs so it still contains versions that may not be in the scene
-at that point in time.
+user deletes alembic nodes inside the group. Right now, the node logic and UI are not updated
+as they should.
 
 Thank you for reading.
-

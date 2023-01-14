@@ -14,11 +14,15 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self, parent)
 
         self.__node = node
+        # Mappings from geometry or category name to Qt widgets
+        # {name: [widgets]}
+        self.__check_boxes = {}
+        self.__combo_boxes_ver = {}
+        self.__combo_boxes_cat = {}
 
         # Create UI parameters
         location_parameter = self.__node.getParameter("location")
         folder_path_parameter = self.__node.getParameter("folderPath")
-
         create_parameter_policy = UI4.FormMaster.CreateParameterPolicy
         self.__location_parameter_policy = create_parameter_policy(
             None, location_parameter
@@ -47,20 +51,13 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         self.main_layout.addWidget(location_widget)
         self.main_layout.addWidget(folder_path_widget)
         self.main_layout.addWidget(self.__load_button)
-
         self.setLayout(self.main_layout)
-
-        # Mapping from geo or category name to Qt widgets
-        # {name: [widgets]}
-        self.__check_boxes = {}
-        self.__combo_boxes_ver = {}
-        self.__combo_boxes_cat = {}
 
     def __check_box_clicked(self, state, category):
         """Enable/disable nodes under category based on check box state
 
         :param state: (Qt.Checked) Object representing state
-        :param category: (str) Active category
+        :param category: (str) Name of active category
         """
         combo_box_cat = self.__combo_boxes_cat.get(category)
         active_geo_name = combo_box_cat.currentText()
@@ -75,9 +72,9 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 self.__node.disable_node(geo_name)
 
     def __combo_box_category_changed(self, geo_name):
-        """Update nodes based on active category
+        """Update nodes under category based on current geometry
 
-        :param geo_name: (str) Name of geometry
+        :param geo_name: (str) Name of active geometry
         """
         category = geo_name.split("_")[0]
         # Update versions in combo box with correct labels
@@ -94,10 +91,10 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 self.__node.disable_node(name)
 
     def __combo_box_version_changed(self, version, category):
-        """Update nodes based on active geometry version
+        """Update nodes under category based on current version
 
-        :param version: (str) Updated version value
-        :param category: (str) Category being changed
+        :param version: (str) Value of active version
+        :param category: (str) Name of category being changed
         """
         geo_name = self.__combo_boxes_cat.get(category).currentText()
         if not version:
@@ -108,8 +105,8 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         )
 
     def __load_button_clicked(self):
-        """Trigger node to load alembics in current folder path parameter
-        and set up UI widgets
+        """Trigger AlembicLoaderNode object to load alembics inside the current
+        folder path parameter and set up corresponding UI widgets
         """
         for node in self.__node.load_alembics(
             self.__folder_path_parameter_policy.getValue()
@@ -137,7 +134,7 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             combo_box_cat.addItem(geo_name)
             combo_box_cat.setCurrentText(geo_name)
 
-            # Update or create combo box widget to control geo version
+            # Update or create combo box widget to control geometry version
             self.__update_combo_box(
                 category,
                 self.__combo_boxes_ver,
@@ -165,10 +162,10 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         return combo_box
 
     def __update_combo_box_versions(self, category, geo_name):
-        """Update version combo box for category using active geo name
+        """Update the version of the active geometry under category
 
-        :param category: (str) Category for current geometry
-        :param geo_name: (str) Active geometry name
+        :param category: (str) Name of geometry category
+        :param geo_name: (str) Name of active geometry
         """
         combo_box_ver = self.__combo_boxes_ver.get(category)
         combo_box_ver.clear()

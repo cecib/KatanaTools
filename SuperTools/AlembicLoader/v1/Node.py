@@ -12,14 +12,17 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
     REGEX_VERSION = r"(v\d{3})"
 
     def __init__(self):
+        # Categories corresponding to geometry name prefix
+        # {category: [geo_names]}
+        self.__categories = {}
+        # Mapping from geometry name to version to path
+        # {geo_name: {version_int: alembic_path}}
+        self.__name_to_versions = {}
+
         self.hideNodegraphGroupControls()
         self.addOutputPort("output")
-
         self.getParameters().createChildString("location", "/root")
-        self.getParameters().createChildString(
-            "folderPath",
-            "C:/Users/Ceci/Documents/_jobs/spinvfx/katana_test_products/products/",
-        )
+        self.getParameters().createChildString("folderPath", "")
 
         self.merge_node = NodegraphAPI.CreateNode("Merge", self)
         self.merge_pos = NodegraphAPI.GetNodePosition(self.merge_node)
@@ -27,12 +30,6 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         self.getReturnPort(self.getOutputPortByIndex(0).getName()).connect(
             self.merge_node.getOutputPortByIndex(0)
         )
-        # Mapping from geometry name to version to path
-        # {geo_name: {version_int: alembic_path}}
-        self.__name_to_versions = {}
-        # Categories corresponding to first part of geometry name
-        # {category: [geo_names]}
-        self.__categories = {}
 
     def add_node_reference_param(self, param_name, node):
         """Add name reference to given node for easy access
@@ -79,7 +76,7 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
     def get_category_values(self, category):
         """Get all geometry names for given category
 
-        :param category: Category to query
+        :param category: Name of category to query
         :return: (list) Geometry names under category
         """
         return self.__categories.get(category, [])
@@ -145,10 +142,10 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         return nodes
 
     def update_version(self, version, geo_name):
-        """Update version of child node with matching geo name
+        """Update version of the node with matching geometry name
 
         :param version: (int) Version to switch to
-        :param geo_name: (str) Active geometry name
+        :param geo_name: (str) Name of active geometry
         """
         version_dict = self.__name_to_versions.get(geo_name)
         node = self.get_ref_node(geo_name)
