@@ -6,6 +6,8 @@ from Katana import NodegraphAPI
 
 class AlembicLoaderNode(NodegraphAPI.SuperTool):
 
+    ABC_PATH_PARAM = "abcAsset"
+    NODE_PREFIX = "node_"
     REGEX_NAME = r"^(.*?)\_v\d{3}.abc"
     REGEX_VERSION = r"(v\d{3})"
 
@@ -50,14 +52,14 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
             node.setBypassed(False)
 
     def get_ref_node(self, node_name):
-        p = self.getParameter("node_" + node_name)
+        p = self.getParameter(self.NODE_PREFIX + node_name)
         if not p:
             return None
 
         return NodegraphAPI.GetNode(p.getValue(0))
 
-    def get_categories(self):
-        return self.__categories
+    def get_category_values(self, category):
+        return self.__categories.get(category, [])
 
     def get_versions(self, geo_name):
         return self.__name_to_versions.get(geo_name)
@@ -88,7 +90,7 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
             node.setName(geo_name)
 
             node.getParameter("name").setValue("/root/world/" + geo_name, 1.0)
-            node.getParameter("abcAsset").setValue(fullpath, 1.0)
+            node.getParameter(self.ABC_PATH_PARAM).setValue(fullpath, 1.0)
 
             node.getOutputPortByIndex(0).connect(
                 self.merge_node.addInputPort(str(node_id))
@@ -97,7 +99,7 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
                 node, (0, self.merge_pos[1] + 50 * (node_id + 1))
             )
 
-            self.add_node_reference_param("node_" + geo_name, node)
+            self.add_node_reference_param(self.NODE_PREFIX + geo_name, node)
             nodes.append(node)
 
         return nodes
@@ -107,4 +109,4 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         node = self.get_ref_node(geo_name)
         if not node or not version_dict:
             return
-        node.getParameter("abcAsset").setValue(version_dict.get(version), 1.0)
+        node.getParameter(self.ABC_PATH_PARAM).setValue(version_dict.get(version), 1.0)

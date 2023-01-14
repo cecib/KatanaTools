@@ -117,7 +117,7 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         if not check_box.isChecked():
             return
         self.__node.enable_node(geo_name)
-        for name in self.__node.get_categories[category]:
+        for name in self.__node.get_category_values(category):
             if name != geo_name:
                 self.__node.disable_node(name)
 
