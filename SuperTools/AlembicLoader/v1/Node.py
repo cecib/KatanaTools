@@ -118,7 +118,6 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
             if version_dict:
                 version_dict.update({version_num: fullpath})
                 continue
-
             self.__name_to_versions.update({geo_name: {version_num: fullpath}})
             node_id = len(self.__name_to_versions)
 
@@ -128,7 +127,6 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
 
             node.getParameter("name").setValue("/root/world/" + geo_name, 1.0)
             node.getParameter(self.ABC_PATH_PARAM).setValue(fullpath, 1.0)
-
             node.getOutputPortByIndex(0).connect(
                 self.merge_node.addInputPort(str(node_id))
             )
