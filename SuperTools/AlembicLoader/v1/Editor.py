@@ -5,6 +5,18 @@ from PyQt5 import (
 )
 from Katana import UI4
 
+# 1. Can you make camera_reference and camera_asset (and any other case where
+#    the first word part of name separated by '_' are the same) mutually exclusive?
+#    An artist would use one of them as an active camera.
+
+# 2. Consider the case where there are 10~20 version of each kind of publish
+#    (let's assume our cube asset has these many versions). Instead of making
+#    1 alembic_in for every single version, can you think of a way to reuse 1
+#    alembic_in node per publish kind (i.e. 1 camera_asset alembic_in for all
+#    camera_asset_* versions)? This way the scene graph can be contained and
+#    eventual updates of the versions into the scene can still happen without
+#    creating so many alembic_in nodes?
+
 
 class AlembicLoaderEditor(QtWidgets.QWidget):
     def __init__(self, parent, node):
@@ -81,11 +93,11 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 )
                 self.main_layout.addWidget(combo_box)
                 self.__combo_boxes.update({geo_name: combo_box})
-            combo_box.addItem(node.getName().split("_")[-1])
 
-        # Set latest alembic version for each geo
-        for geo_name in loaded_geo_names:
-            combo_box = self.__combo_boxes.get(geo_name)
+            versions = self.__node.get_versions(geo_name)
+            for item in versions:
+
+                combo_box.addItem("v" + str(item).zfill(3))
             combo_box.setCurrentText(
                 "v" + str(max(self.__node.get_versions(geo_name))).zfill(3)
             )
@@ -94,11 +106,10 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         combo_box = self.__combo_boxes.get(geo_name)
         if combo_box is None:
             return
-        node_name = geo_name + "_" + str(combo_box.currentText())
         if state == QtCore.Qt.Checked:
-            self.__node.enable_node(node_name)
+            self.__node.enable_node(geo_name)
         else:
-            self.__node.disable_node(node_name)
+            self.__node.disable_node(geo_name)
 
     def __combobox_changed(self, version_label, geo_name):
         self.__node.update_version(

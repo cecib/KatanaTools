@@ -14,7 +14,10 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         self.addOutputPort("output")
 
         self.getParameters().createChildString("location", "/root")
-        self.getParameters().createChildString("folderPath", "")
+        self.getParameters().createChildString(
+            "folderPath",
+            "C:/Users/Ceci/Documents/_jobs/spinvfx/katana_test_products/products/",
+        )
 
         self.merge_node = NodegraphAPI.CreateNode("Merge", self)
         self.merge_pos = NodegraphAPI.GetNodePosition(self.merge_node)
@@ -23,6 +26,7 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
             self.merge_node.getOutputPortByIndex(0)
         )
         self.__name_to_versions = {}
+        self.__categories = set()
 
     def add_node_reference_param(self, param_name, node):
         param = self.getParameter(param_name)
@@ -52,37 +56,48 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         return self.__name_to_versions.get(geo_name)
 
     def load_alembics(self, directory):
+        nodes = []
         for idx, filename in enumerate(os.listdir(directory)):
             if not filename.endswith(".abc"):
                 continue
 
             geo_name = re.match(self.REGEX_NAME, filename).groups()[0]
             version = re.split(self.REGEX_VERSION, filename)[1]
-            node_name = geo_name + "_" + str(version)
-            if self.get_ref_node(node_name):
+            # node_name = geo_name + "_" + str(version)
+            if self.get_ref_node(geo_name):
                 continue
 
-            node = NodegraphAPI.CreateNode("Alembic_In", self)
-            node.setName(node_name)
-
-            # Update Alembic_In node parameters
-            node.getParameter("name").setValue("/root/world/" + geo_name, 1.0)
-            node.getParameter("abcAsset").setValue(
-                os.path.join(directory, filename), 1.0
-            )
-            node.getOutputPortByIndex(0).connect(self.merge_node.addInputPort(geo_name))
-            NodegraphAPI.SetNodePosition(node, (0, self.merge_pos[1] + 50 * (idx + 1)))
+            self.__categories.add(geo_name.split("_")[0])
 
             # Store all available versions for given geometry
             version_num = int(version[1:])
             versions = self.__name_to_versions.get(geo_name)
             if versions:
+                node = self.get_ref_node(geo_name)
+
                 versions.append(version_num)
             else:
+                node = NodegraphAPI.CreateNode("Alembic_In", self)
+                node.setName(geo_name)
+
+                # Update Alembic_In node parameters
+                node.getParameter("name").setValue("/root/world/" + geo_name, 1.0)
+                node.getParameter("abcAsset").setValue(
+                    os.path.join(directory, filename), 1.0
+                )
+                node.getOutputPortByIndex(0).connect(
+                    self.merge_node.addInputPort(geo_name)
+                )
+                NodegraphAPI.SetNodePosition(
+                    node, (0, self.merge_pos[1] + 50 * (idx + 1))
+                )
+
+                self.add_node_reference_param("node_" + geo_name, node)
                 self.__name_to_versions.update({geo_name: [version_num]})
 
-            self.add_node_reference_param("node_" + node_name, node)
-            yield node
+                nodes.append(node)
+
+        return nodes
 
     def update_version(self, curr_version, geo_name, is_enabled):
         name_prefix = geo_name + "_v"
