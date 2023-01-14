@@ -50,13 +50,18 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
 
         self.setLayout(self.main_layout)
 
-        # Mapping from geo or category name to Qt widget
-        # {name: widget}
+        # Mapping from geo or category name to Qt widgets
+        # {name: [widgets]}
         self.__check_boxes = {}
         self.__combo_boxes_ver = {}
         self.__combo_boxes_cat = {}
 
     def __check_box_clicked(self, state, category):
+        """Enable/disable nodes under category based on check box state
+
+        :param state: (Qt.Checked) Object representing state
+        :param category: (str) Active category
+        """
         combo_box_cat = self.__combo_boxes_cat.get(category)
         active_geo_name = combo_box_cat.currentText()
         is_enabled = state == QtCore.Qt.Checked
@@ -70,6 +75,10 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 self.__node.disable_node(geo_name)
 
     def __combo_box_category_changed(self, geo_name):
+        """Update nodes based on active category
+
+        :param geo_name: (str) Name of geometry
+        """
         category = geo_name.split("_")[0]
         # Update versions in combo box with correct labels
         combo_box_ver = self.__combo_boxes_ver.get(category)
@@ -85,6 +94,11 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 self.__node.disable_node(name)
 
     def __combo_box_version_changed(self, version, category):
+        """Update nodes based on active geometry version
+
+        :param version: (str) Updated version value
+        :param category: (str) Category being changed
+        """
         geo_name = self.__combo_boxes_cat.get(category).currentText()
         if not version:
             return
@@ -94,6 +108,9 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
         )
 
     def __load_button_clicked(self):
+        """Trigger node to load alembics in current folder path parameter
+        and set up UI widgets
+        """
         for node in self.__node.load_alembics(
             self.__folder_path_parameter_policy.getValue()
         ):
@@ -130,16 +147,29 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             )
             self.__update_combo_box_versions(category, geo_name)
 
-    def __update_combo_box(self, category, container, text_changed_func):
+    def __update_combo_box(self, category, container, text_changed):
+        """Update or create combo box inside given container based on
+        provided category
+
+        :param category: (str) The category name for combo boxes
+        :param container: (dict) Contains all relevant combo boxes
+        :param text_changed: (function) Triggered with text change
+        :return: (QtWidgets.QComboBox) Updated or created widget
+        """
         combo_box = container.get(category)
         if not combo_box:
             combo_box = QtWidgets.QComboBox(self)
-            combo_box.currentTextChanged.connect(text_changed_func)
+            combo_box.currentTextChanged.connect(text_changed)
             self.main_layout.addWidget(combo_box)
             container.update({category: combo_box})
         return combo_box
 
     def __update_combo_box_versions(self, category, geo_name):
+        """Update version combo box for category using active geo name
+
+        :param category: (str) Category for current geometry
+        :param geo_name: (str) Active geometry name
+        """
         combo_box_ver = self.__combo_boxes_ver.get(category)
         combo_box_ver.clear()
         versions = self.__node.get_versions(geo_name).keys()

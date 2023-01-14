@@ -35,6 +35,11 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         self.__categories = {}
 
     def add_node_reference_param(self, param_name, node):
+        """Add name reference to given node for easy access
+
+        :param param_name: (str) Node reference name
+        :param node: (NodegraphAPI.GetNode) Object to update
+        """
         param = self.getParameter(param_name)
         if not param:
             param = self.getParameters().createChildString(param_name, "")
@@ -42,16 +47,29 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         param.setExpression("getNode(%r).getNodeName()" % node.getName())
 
     def disable_node(self, node_name):
+        """Disable node that matches name
+
+        :param node_name: (str) Name of node
+        """
         node = self.get_ref_node(node_name)
         if node:
             node.setBypassed(True)
 
     def enable_node(self, node_name):
+        """Enable node that matches name
+
+        :param node_name: (str) Name of node
+        """
         node = self.get_ref_node(node_name)
         if node:
             node.setBypassed(False)
 
     def get_ref_node(self, node_name):
+        """Get the scene node with the provided name
+
+        :param node_name: Name of node to retrieve
+        :return: (NodegraphAPI.GetNode|None) Matching node
+        """
         p = self.getParameter(self.NODE_PREFIX + node_name)
         if not p:
             return None
@@ -59,12 +77,27 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         return NodegraphAPI.GetNode(p.getValue(0))
 
     def get_category_values(self, category):
+        """Get all geometry names for given category
+
+        :param category: Category to query
+        :return: (list) Geometry names under category
+        """
         return self.__categories.get(category, [])
 
     def get_versions(self, geo_name):
+        """Get all versions for given geometry name
+
+        :param geo_name: (str) Name of asset to get versions for
+        :return: (list) Versions for geometry asset
+        """
         return self.__name_to_versions.get(geo_name)
 
     def load_alembics(self, directory):
+        """Create Alembic_In nodes for all files inside directory
+
+        :param directory: (str) Path to alembic files
+        :return: (list) Alembic_In nodes that were created
+        """
         nodes = []
         for idx, filename in enumerate(os.listdir(directory)):
             if not filename.endswith(".abc"):
@@ -112,8 +145,14 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         return nodes
 
     def update_version(self, version, geo_name):
+        """Update version of child node with matching geo name
+
+        :param version: (int) Version to switch to
+        :param geo_name: (str) Active geometry name
+        """
         version_dict = self.__name_to_versions.get(geo_name)
         node = self.get_ref_node(geo_name)
-        if not node or not version_dict:
-            return
-        node.getParameter(self.ABC_PATH_PARAM).setValue(version_dict.get(version), 1.0)
+        if node and not version_dict:
+            node.getParameter(self.ABC_PATH_PARAM).setValue(
+                version_dict.get(version), 1.0
+            )
