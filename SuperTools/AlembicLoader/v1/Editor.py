@@ -5,13 +5,6 @@ from PyQt5 import (
 )
 from Katana import UI4
 
-# 1. Can you make camera_reference and camera_asset (and any other case where
-#    the first word part of name separated by '_' are the same) mutually exclusive?
-#    An artist would use one of them as an active camera.
-
-# Do not repeat constants like "abcAsset"
-# Fix comments, for example those in load_alembics don't flow/fit well
-
 
 class AlembicLoaderEditor(QtWidgets.QWidget):
 
@@ -65,28 +58,30 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
 
     def __check_box_clicked(self, state, category):
         combo_box_cat = self.__combo_boxes_cat.get(category)
+        active_geo_name = combo_box_cat.currentText()
         is_enabled = state == QtCore.Qt.Checked
-        for x in [
+        # Enable geo that is active in category combo box
+        for geo_name in [
             combo_box_cat.itemText(i) for i in range(combo_box_cat.count())
         ]:
-            if is_enabled:
-                self.__node.enable_node(x)
+            if geo_name == active_geo_name and is_enabled:
+                self.__node.enable_node(geo_name)
             else:
-                self.__node.disable_node(x)
+                self.__node.disable_node(geo_name)
 
-    def __combo_box_category_changed(self, y):
-        category = y.split("_")[0]
+    def __combo_box_category_changed(self, geo_name):
+        category = geo_name.split("_")[0]
         # Update versions in combo box with correct labels
         combo_box_ver = self.__combo_boxes_ver.get(category)
         if combo_box_ver:
-            self.__update_combo_box_versions(category, y)
+            self.__update_combo_box_versions(category, geo_name)
         # Enable active geo and disable others in category
         check_box = self.__check_boxes.get(category)
         if not check_box.isChecked():
             return
-        self.__node.enable_node(y)
+        self.__node.enable_node(geo_name)
         for name in self.__node.get_category_values(category):
-            if name != y:
+            if name != geo_name:
                 self.__node.disable_node(name)
 
     def __combo_box_version_changed(self, version, category):
@@ -118,37 +113,36 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                 self.main_layout.addWidget(check_box)
                 self.__check_boxes.update({category: check_box})
 
-            # Add combo box widget to control category options
-            combo_box_cat = self.__combo_boxes_cat.get(category)
-            if not combo_box_cat:
-                combo_box_cat = QtWidgets.QComboBox(self)
-                combo_box_cat.currentTextChanged.connect(
-                    self.__combo_box_category_changed
-                )
-                self.main_layout.addWidget(combo_box_cat)
-                self.__combo_boxes_cat.update({category: combo_box_cat})
+            # Update or create combo box widget to control category options
+            combo_box_cat = self.__update_combo_box(
+                category, self.__combo_boxes_cat, self.__combo_box_category_changed
+            )
             combo_box_cat.addItem(geo_name)
             combo_box_cat.setCurrentText(geo_name)
 
-            # Add combo box widget to control geo version
-            combo_box_ver = self.__combo_boxes_ver.get(category)
-            if not combo_box_ver:
-                combo_box_ver = QtWidgets.QComboBox(self)
-                combo_box_ver.currentTextChanged.connect(
-                    lambda version, name=category: self.__combo_box_version_changed(
-                        version, name
-                    )
-                )
-                self.main_layout.addWidget(combo_box_ver)
-                self.__combo_boxes_ver.update({category: combo_box_ver})
-
-            # Add version options and set to latest
+            # Update or create combo box widget to control geo version
+            self.__update_combo_box(
+                category,
+                self.__combo_boxes_ver,
+                lambda version, name=category: self.__combo_box_version_changed(
+                    version, name
+                ),
+            )
             self.__update_combo_box_versions(category, geo_name)
 
-    def __update_combo_box_versions(self, category, geom_name):
+    def __update_combo_box(self, category, container, text_changed_func):
+        combo_box = container.get(category)
+        if not combo_box:
+            combo_box = QtWidgets.QComboBox(self)
+            combo_box.currentTextChanged.connect(text_changed_func)
+            self.main_layout.addWidget(combo_box)
+            container.update({category: combo_box})
+        return combo_box
+
+    def __update_combo_box_versions(self, category, geo_name):
         combo_box_ver = self.__combo_boxes_ver.get(category)
         combo_box_ver.clear()
-        versions = self.__node.get_versions(geom_name).keys()
+        versions = self.__node.get_versions(geo_name).keys()
         for item in versions:
             combo_box_ver.addItem(self.VERSION_LABEL + str(item).zfill(3))
         combo_box_ver.setCurrentText(self.VERSION_LABEL + str(max(versions)).zfill(3))
