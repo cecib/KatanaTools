@@ -30,7 +30,7 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         # Mapping from geometry name to version to path
         # {geo_name: {version_int: alembic_path}}
         self.__name_to_versions = {}
-        # Categories corresponding to 1st part of geometry name
+        # Categories corresponding to first part of geometry name
         # {category: [geo_names]}
         self.__categories = {}
 

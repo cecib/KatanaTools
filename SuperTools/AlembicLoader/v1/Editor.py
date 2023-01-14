@@ -57,6 +57,8 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
 
         self.setLayout(self.main_layout)
 
+        # Mapping from geo or category name to Qt widget
+        # {name: widget}
         self.__check_boxes = {}
         self.__combo_boxes_ver = {}
         self.__combo_boxes_cat = {}
@@ -74,6 +76,10 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
 
     def __combo_box_category_changed(self, geo_name):
         category = geo_name.split("_")[0]
+        # Update versions in combo box with correct labels
+        combo_box_ver = self.__combo_boxes_ver.get(category)
+        self.__update_combo_box_versions(combo_box_ver, geo_name)
+        # Enable active geo and disable others in category
         check_box = self.__check_boxes.get(category)
         if not check_box.isChecked():
             return
@@ -120,7 +126,7 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             combo_box_cat.addItem(geo_name)
 
             # Add combo box widget to control geo version
-            combo_box_ver = self.__combo_boxes_ver.get(geo_name)
+            combo_box_ver = self.__combo_boxes_ver.get(category)
             if not combo_box_ver:
                 combo_box_ver = QtWidgets.QComboBox(self)
                 combo_box_ver.currentTextChanged.connect(
@@ -129,12 +135,14 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
                     )
                 )
                 self.main_layout.addWidget(combo_box_ver)
-                self.__combo_boxes_ver.update({geo_name: combo_box_ver})
+                self.__combo_boxes_ver.update({category: combo_box_ver})
 
             # Add version options and set to latest
-            versions = self.__node.get_versions(geo_name).keys()
-            for item in versions:
-                combo_box_ver.addItem(self.VERSION_LABEL + str(item).zfill(3))
-            combo_box_ver.setCurrentText(
-                self.VERSION_LABEL + str(max(versions)).zfill(3)
-            )
+            self.__update_combo_box_versions(combo_box_ver, geo_name)
+
+    def __update_combo_box_versions(self, combo_box, geo_name):
+        combo_box.clear()
+        versions = self.__node.get_versions(geo_name).keys()
+        for item in versions:
+            combo_box.addItem(self.VERSION_LABEL + str(item).zfill(3))
+        combo_box.setCurrentText(self.VERSION_LABEL + str(max(versions)).zfill(3))
