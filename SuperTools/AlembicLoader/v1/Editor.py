@@ -9,8 +9,13 @@ from Katana import UI4
 #    the first word part of name separated by '_' are the same) mutually exclusive?
 #    An artist would use one of them as an active camera.
 
+# Do not repeat constants like "abcAsset"
+# Fix comments, for example those in load_alembics don't flow/fit well
 
 class AlembicLoaderEditor(QtWidgets.QWidget):
+
+    VERSION_LABEL = "v"
+
     def __init__(self, parent, node):
         QtWidgets.QWidget.__init__(self, parent)
 
@@ -90,8 +95,10 @@ class AlembicLoaderEditor(QtWidgets.QWidget):
             # Add version options and set to latest
             versions = self.__node.get_versions(geo_name).keys()
             for item in versions:
-                combo_box.addItem("v" + str(item).zfill(3))
-            combo_box.setCurrentText("v" + str(max(versions)).zfill(3))
+                combo_box.addItem(self.VERSION_LABEL + str(item).zfill(3))
+            combo_box.setCurrentText(
+                self.VERSION_LABEL + str(max(versions)).zfill(3)
+            )
 
     def __check_box_clicked(self, state, geo_name):
         combo_box = self.__combo_boxes.get(geo_name)
