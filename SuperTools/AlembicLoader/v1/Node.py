@@ -152,7 +152,7 @@ class AlembicLoaderNode(NodegraphAPI.SuperTool):
         """
         version_dict = self.__name_to_versions.get(geo_name)
         node = self.get_ref_node(geo_name)
-        if node and not version_dict:
+        if node and version_dict:
             node.getParameter(self.ABC_PATH_PARAM).setValue(
                 version_dict.get(version), 1.0
             )
