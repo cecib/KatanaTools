@@ -1,6 +1,4 @@
-############
-Instructions
-############
+# Instructions
 
 To use this tool, put it inside your SuperTools directory for Katana.
 
